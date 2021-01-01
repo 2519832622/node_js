@@ -152,7 +152,7 @@ tsc -p ./configs/ts.json
                 scale: number;
             }
             let box: Box = {height: 5, width: 6, scale: 10}//合并接口，但是如果其中一个类型不同的话将会报错
-            ```
+          ```
             - 定义 <u>类</u> 或者 <u>构造函数</u>
             ```typescript
             // 类
@@ -710,4 +710,675 @@ vip1.postArticle('标题', '内容', '1.png');
   let user1 = new User(1, 'zMouse', '123456');
   ```
 
-- 
+- **寄存器**
+
+  - 有的时候，我们需要对类成员 `属性` 进行更加细腻的控制，就可以使用 `寄存器` 来完成这个需求，通过 `寄存器`，我们可以对类成员属性的访问进行拦截并加以控制，更好的控制成员属性的设置和访问边界，寄存器分为两种：set/ get
+
+```typescript
+class User {
+    constructor(
+  		readonly _id: number,
+      readonly _username: string,
+      private _password: string//私有密码属性
+    ) {
+    }
+    public set password(password: string) {//设置共有方法，满足条件
+        if (password.length >= 6) {
+            this._password = password;
+        }
+    }
+    public get password() {//访问
+        return '******';
+    }
+  	// ...
+}
+
+```
+
+- 静态属性
+
+  - 关键字 static 
+
+  - 该成员属性或方法是类型的特征还是实例化对象的特征
+
+    \- 如果一个成员方法中没有使用或依赖 `this` ，那么该方法就是静态的
+
+``` typescript
+type IAllowFileTypeList = 'png'|'gif'|'jpg'|'jpeg'|'webp';//这种就可以当作是静态属性
+class VIP extends User {
+  // static 必须在 readonly 之前
+  static readonly ALLOW_FILE_TYPE_LIST: Array<IAllowFileTypeList> = ['png','gif','jpg','jpeg','webp'];
+  constructor(
+  		id: number,
+      username: string,
+      private _allowFileTypes: Array<IAllowFileTypeList>
+    ) {
+        super(id, username);
+  }
+  info(): void {
+    // 类的静态成员都是使用 类名.静态成员 来访问
+    // VIP 这种类型的用户允许上传的所有类型有哪一些
+    console.log(VIP.ALLOW_FILE_TYPE_LIST);
+    // 当前这个 vip 用户允许上传类型有哪一些
+    console.log(this._allowFileTypes);
+  }
+}
+let vip1 = new VIP(1, 'zMouse', ['jpg','jpeg']);
+// 类的静态成员都是使用 类名.静态成员 来访问
+console.log(VIP.ALLOW_FILE_TYPE_LIST);
+this.info();
+```
+
+- 抽象类 
+
+  - 作用就是 定义一个父类的时候  具体功能需要子类去实现 而父类为了约束子类必须有这个实现功能的方法而产生的功能
+
+  - 关键字**abstract**
+
+  - 如果一个方法加了抽象关键子  那么其类也必须加上抽象类关键字
+
+  - 使用抽象类有一个好处：
+
+    - 约定了所有继承子类的所必须实现的方法，使类的设计更加的规范
+
+    **使用注意事项：**
+
+    > ** *
+    >
+    > - **abstract** 修饰的方法不能有方法体
+    >
+    > - 如果一个类有抽象方法，那么该类也必须为抽象的
+    > -  如果一个类是抽象的，那么就不能使用 new 进行实例化（因为抽象类表名该类有未实现的方法，所以不允许实例化）
+    > - 如果一个子类继承了一个抽象类，那么该子类就必须实现抽象类中的所有抽象方法，否则该类还得声明为抽象的
+
+``` typescript
+class MyComponent extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {}
+  }
+  render() {
+    //...
+  }
+}
+/*根据上面代码，我们可以大致设计如下类结构
+- 每个组件都一个 `props` 属性，可以通过构造函数进行初始化，由父级定义
+- 每个组件都一个 `state` 属性，由父级定义
+- 每个组件都必须有一个 `render` 的方法*/
+class Component<T1, T2> {
+    public state: T2;
+    constructor(
+        public props: T1
+    ) {
+       	// ...
+    }
+  	render(): string {
+      	// ...不知道做点啥才好，但是为了避免子类没有 render 方法而导致组件解析错误，父类就用一个默认的 render 去处理可能会出现的错误
+    }
+}
+```
+
+- 类与接口
+
+  - 通过接口，我们可以为对象定义一种结构和契约。我们还可以把接口与类进行结合，通过接口，让类去强制符合某种契约，从某个方面来说，当一个抽象类中只有抽象的时候，它就与接口没有太大区别了，这个时候，我们更推荐通过接口的方式来定义契约
+
+  - 抽象类编译后还是会产生实体代码，而接口不会
+
+  - `TypeScript` 只支持单继承，即一个子类只能有一个父类，但是一个类可以实现过个接口
+
+  - 接口不能有实现，抽象类可以
+
+  - **implements**在一个类中使用接口并不是使用 `extends` 关键字，而是 `implements`
+
+  - 与接口类似，如果一个类 `implements` 了一个接口，那么就必须实现该接口中定义的契约
+
+  - 多个接口使用 `,` 分隔
+
+  -  `implements` 与 `extends` 可同时存在
+
+```typescript
+interface ILog {
+ getInfo(): string;
+}
+class MyComponent extends Component<IMyComponentProps, IMyComponentState> implements ILog {
+  constructor(props: IMyComponentProps) {
+   super(props);
+    this.state = {
+     val: 1
+   }
+  }
+  render() {
+   this.props.title;
+   this.state.val;
+    return `<div>组件</div>`;
+  }
+  getInfo() {
+   return `组件：MyComponent，props：${this.props}，state：${this.state}`;
+  }
+}
+*********************************************************************************************
+//接口也可以继承
+ interface ILog {
+    getInfo(): string;
+}
+interface IStorage extends ILog {
+    save(data: string): void;
+}
+```
+
+- **类与对象类型**
+
+  - 当我们在 TypeScript 定义一个类的时候，其实同时定义了两个不同的类型
+    - 类类型（构造函数类型）
+    - 对象类型
+
+  - 首先，对象类型好理解，就是我们的 new 出来的实例类型
+
+  - 那类类型是什么，我们知道 JavaScript 中的类，或者说是 TypeScript 中的类其实本质上还是一个函数，当然我们也称为构造函数，那么这个类或者构造函数本身也是有类型的，那么这个类型就是类的类型
+
+```typescript
+class Person {
+ // 属于类的
+ static type = '人';
+ // 属于实例的
+ name: string;
+ age: number;
+ gender: string;
+ // 类的构造函数也是属于类的
+ constructor( name: string, age: number, gender: '男'|'女' = '男' ) {
+  this.name = name;
+  this.age = age;
+  this.gender = gender;
+ }
+ public eat(): void {
+  // ...
+ }
+}
+let p1 = new Person('zMouse', 35, '男');
+p1.eat();
+Person.type;
+/*
+上面例子中，有两个不同的数据
+- `Person` 类（构造函数）
+	通过 `Person` 实例化出来的对象 `p1`
+- 对应的也有两种不同的类型
+    - 实例的类型（`Person`）
+    - 构造函数的类型（`typeof Person`）
+*/
+***************************************************************************************************
+//用接口的方式描述如下
+interface Person {
+  name: string;
+  age: number;
+  gender: string;
+  eat(): void;
+}
+interface PersonConstructor {
+  // new 表示它是一个构造函数
+  new (name: string, age: number, gender: '男'|'女'): PersonInstance;
+  type: string;
+}
+//在使用的时候要格外注意
+function fn1(arg: Person /*如果希望这里传入的Person 的实例对象*/) {
+  arg.eat();
+}
+fn1( new Person('', 1, '男') );
+function fn2(arg: typeof Person /*如果希望传入的Person构造函数*/) {
+  new arg('', 1, '男');
+}
+fn2(Person);
+```
+
+****
+
+### 类型系统深入
+
+- 类型保护
+
+- `typeof`
+
+  ``` typescript
+  //我们知道 `typeof `可以返回某个数据的类型，在 `TypeScript `在 if 、 else 代码块中能够把` typeof `识别为类型保护，推断出适合的类型
+  function fn(a: string|number) {
+   // error，不能保证 a 就是字符串
+   a.substring(1);
+   if (typeof a === 'string') {
+   // ok
+   a.substring(1);
+   } else {
+   // ok
+   a.toFixed(1);
+   }
+  }
+  ```
+
+- `instanceof`
+
+  ```typescript
+  //与`typeof`类似 也可以用来做类型保护,精确类型系统判断
+  function fn(a: Date|Array<any>) {
+   if (a instanceof Array) {
+   a.push(1);
+   } else {
+   a.getFullYear();
+   }
+  }
+  ```
+
+- `in `
+
+  ```typescript
+  interface IA {
+   x: string;
+   y: string;
+  }
+  interface IB {
+   a: string;
+   b: string;
+  }
+  function fn(arg: IA | IB) {
+   if ('x' in arg) {
+   // ok
+   arg.x;
+   // error
+   arg.a;
+   } else {
+   // ok
+   arg.a;
+   // error
+  ```
+
+- 字⾯量类型保护
+
+```typescript
+//如果类型为字面量类型，那么 还可以通过该字面量类型的字面值来惊醒判断
+interface IA {
+ type: 'IA';
+ x: string;
+ y: string;
+}
+interface IB {
+ type: 'IB';
+ a: string;
+ b: string;
+}
+function fn(arg: IA | IB) {
+ if (arg.type === 'IA') {
+ // ok
+ arg.x;
+ // error
+ arg.a;
+ } else {
+ // ok
+ arg.a;
+ // error
+ arg.x;
+ }
+}
+```
+
+- ⾃定义类型保护
+
+```typescript
+//有的时候，以上的⼀些⽅式并不能满⾜⼀些特殊情况，则可以⾃定义类型保护规则
+function canEach(data: any): data is Element[]|NodeList {
+ return data.forEach !== undefined;
+}
+function fn2(elements: Element[]|NodeList|Element) {
+ if ( canEach(elements) ) {
+ elements.forEach((el: Element)=>{
+ el.classList.add('box');
+ });
+ } else {
+ elements.classList.add('box');
+ }
+}
+```
+
+- 类型操作
+
+  - TypeScript 提供了⼀些⽅式来操作类型这种数据，但是需要注意的是，类型数据只能作为类型来使 ⽤，⽽不能作为程序中的数据，这是两种不同的数据，⼀个⽤在编译检测阶段，⼀个⽤于程序执⾏阶段
+
+  - `typeof`
+
+    ```typescript
+    /*在 TypeScript 中， typeof 有两种作⽤
+        -获取数据的类型
+        -捕获数据的类型
+    ```
+
+  - `keyof`获取类型所有key的集合
+  - `in`针对类型进⾏操作的话，内部使⽤的 for…in 对类型进⾏遍历
+    - 注意： in 后⾯的类型值必须是 string 或者 number 或者 symbol
+
+  - 类型兼容
+
+    ```typescript
+    /*TypeScript 的类型系统是基于结构⼦类型的，它与名义类型（如：java）不同（名义类型的数据类型
+    兼容性或等价性是通过明确的声明或类型的名称来决定的）。这种基于结构⼦类型的类型系统是基于组
+    成结构的，只要具有相同类型的成员，则两种类型即为兼容的。*/
+    class Person {
+     name: string;
+     age: number;
+    }
+    class Cat {
+     name: string;
+     age: number;
+    }
+    function fn(p: Person) {
+     	p.name;
+    }
+    let xiaohua = new Cat();
+    // ok，因为 Cat 类型的结构与 Person 类型的结构相似，所以它们是兼容的
+    fn(xiaohua);
+    ```
+
+****
+
+### 泛型
+
+- 许多时候，标注的具体类型并不能确定，比如一个函数的参数类型
+
+  ```typescript
+  function getVal(obj, k) {
+  	return obj[k];
+  }
+  /*上面的函数，我们想实现的是获取一个对象指定的 k 所对应的值，那么实际使用的时候，obj 的类型是
+  不确定的，自然 k 的取值范围也是不确定的，它需要我们在具体调用的时候才能确定，这个时候这种定
+  义过程不确定类型的需求就可以通过泛型来解决*/
+  function getVal<T>(obj: T, k: keyof T) {//使用泛型。<T>
+  	return obj[k];
+  }
+  /*所谓的泛型，就是给可变（不定）的类型定义变量（参数）， <> 类似 ()*/
+  *********************************************************************************************
+      
+  - 泛型类
+  abstract class Component<T1, T2> {
+      props: T1;
+      state: T2;
+      constructor(props: T1) {
+      this.props = props;
+  }
+  	abstract render(): string;
+  }
+  
+  interface IMyComponentProps {
+  	val: number;
+  }
+  
+  interface IMyComponentState {
+  	x: number;
+  }
+  
+  class MyComponent extends Component<IMyComponentProps, IMyComponentState> {//子类调用泛型类接口
+  constructor(props: IMyComponentProps) {
+      super(props);
+      this.state = {
+      x: 1
+  	}
+  }
+  render() {
+      this.props.val;
+      this.state.x;
+      return '<myComponent />';
+  	}
+  }
+  let myComponent = new MyComponent({val: 1});
+  myComponent.render();
+  
+  *********************************************************************************************
+  - 泛型接口
+  /*我们还可以在接口中使用泛型，后端提供了一些接口，用以返回一些数据，依据返回的数据格式定义如下接口*/
+  interface IResponseData {
+      code: number;
+      message?: string;
+      data: any;
+  }
+  //根据接口，我们封装对应的一些方法
+  function getData(url: string) {
+      return fetch(url).then(res => {
+     		 return res.json();
+      }).then( (data: IResponseData) => {
+      	return data;
+  	});
+  }
+  /*但是，我们会发现该接口的 data 项的具体格式不确定，不同的接口会返回的数据是不一样的，当我们
+  想根据具体当前请求的接口返回具体 data 格式的时候，就比较麻烦了，因为 getData 并不清楚你调
+  用的具体接口是什么，对应的数据又会是什么样的
+  这个时候我们可以对 IResponseData 使用泛型*/
+  interface IResponseData<T> {
+      code: number;
+      message?: string;
+      data: T;
+  }
+  //封装泛型类
+  function getData<U>(url: string) {
+      return fetch(url).then(res => {
+      	return res.json();
+      }).then( (data: IResponseData<U>) => {
+      	return data;
+      });
+  }
+  
+  //定义不同的数据接口
+  // 用户接口
+  interface IResponseUserData {
+      id: number;
+      username: string;
+      email: string;
+  }
+  // 文章接口
+  interface IResponseArticleData {
+      id: number;
+      title: string;
+      author: IResponseUserData;
+  }
+  //调用具体的方法
+  (async function(){
+      //实现接口1
+      let user = await getData<IResponseUserData>('');
+      if (user.code === 1) {
+      	console.log(user.message);
+      } else {
+     	 console.log(user.data.username);
+      }
+      //实现接口2
+      let articles = await getData<IResponseArticleData>('');
+      if (articles.code === 1) {
+     	 console.log(articles.message);
+      } else {
+          console.log(articles.data.id);
+          console.log(articles.data.author.username);
+      }
+  });
+  ```
+
+  
+
+++++
+
+### **装饰器**
+
+- `装饰器-Decorators` 在 `TypeScript` 中是一种可以在不修改类代码的基础上通过添加标注的方式来对类型进行扩展的一种方式
+
+  -  减少代码量
+
+  - 提高代码扩展性、可读性和维护性
+  - 装饰器本质就是一个函数
+  -  通过特定语法在特定的位置调用装饰器函数即可对数据（类、方法、甚至参数等）进行扩展
+
+  > **在`TypeScript` *中，装饰器只能在类中使用***
+
+  ```typescript
+  **启用装饰器特性**
+  //- 在配置文件中添加 `experimentalDecorators: true`
+  // 装饰器函数
+  function log(target: Function, type: string, descriptor: PropertyDescriptor) {
+      let value = descriptor.value;
+      descriptor.value = function(a: number, b: number) {
+          let result = value(a, b);
+          console.log('日志：', {
+              type,
+              a,
+              b,
+              result
+          })
+          return result;
+      }
+  }
+  // 原始类
+  class M {
+      @log
+      static add(a: number, b: number) {
+          return a + b;
+      }
+      @log
+      static sub(a: number, b: number) {
+          return a - b;
+      }
+  }
+  
+  let v1 = M.add(1, 2);
+  console.log(v1);
+  let v2 = M.sub(1, 2);
+  console.log(v2);
+  ****************************************************************************************************
+  /*`
+  - 装饰器` 是一个函数，它可以通过 `@装饰器函数` 这种特殊的语法附加在 `类`、`方法` 、`访问符`、`属性`、`参数` 上，对它们进行包装，然后返回一个包装后的目标对象（`类`、`方法` 、`访问符`、`属性`、`参数` ），装饰器工作在类的构建阶段，而不是使用阶段*/
+  function 装饰器1() {}
+  ...
+  @装饰器1
+  class MyClass {
+    @装饰器2
+    a: number;
+    @装饰器3
+    static property1: number;
+    @装饰器4
+    get b() { 
+      return 1; 
+    }
+    @装饰器5
+    static get c() {
+      return 2;
+    }
+    @装饰器6
+    public method1(@装饰器5 x: number) {
+      //
+    }
+    @装饰器7
+    public static method2() {}
+  }
+  ****************************************************************************************************
+  /*
+  类装饰器:
+      目标
+     		- 应用于类的构造函数
+  	参数
+          - 第一个参数（也只有一个参数）
+          - 类的构造函数作为其唯一的参数
+  ****************************************************************************************************
+  方法装饰器:
+      目标
+      	- 应用于类的方法上
+      参数
+     		- 第一个参数
+                - 静态方法：类的构造函数
+                - 实例方法：类的原型对象
+          - 第二个参数
+                - 方法名称
+          - 第三个参数
+          	  - 方法描述符对象
+  ****************************************************************************************************
+  属性装饰器:
+      目标
+      	- 应用于类的属性上
+      参数
+      	- 第一个参数
+                - 静态方法：类的构造函数
+                - 实例方法：类的原型对象
+      	- 第二个参数
+        		  - 属性名称
+  ****************************************************************************************************
+  访问器装饰器:
+      目标
+      	- 应用于类的访问器（getter、setter）上
+      参数
+      	- 第一个参数
+                - 静态方法：类的构造函数
+                - 实例方法：类的原型对象
+      	- 第二个参数
+            	- 属性名称
+          - 第三个参数
+            	- 方法描述符对象
+  ****************************************************************************************************
+  参数装饰器
+      目标
+      	- 应用在参数上
+      参数
+     		 - 第一个参数
+                - 静态方法：类的构造函数
+                - 实例方法：类的原型对象
+          - 第二个参数
+            	  - 方法名称
+          - 第三个参数
+               - 参数在函数参数列表中的索引
+  ****************************************************************************************************
+  装饰器执行顺序
+      实例装饰器:
+      		属性 => 访问符 => 参数 => 方法
+      静态装饰器:
+      		属性 => 访问符 => 参数 => 方法
+      类:
+      		类
+  ****************************************************************************************************
+  如果我们需要给装饰器执行过程中传入一些参数的时候，就可以使用装饰器工厂来实现*/
+  // 装饰器函数
+  function log(callback: Function) {
+    	return function(target: Function, type: string, descriptor: PropertyDescriptor) {
+       	 	let value = descriptor.value;
+          descriptor.value = function(a: number, b: number) {
+              let result = value(a, b);
+              callback({
+                  type,
+                  a,
+                  b,
+                  result
+              });
+              return result;
+          }
+      }
+  }
+  // 原始类
+  class M {
+      @log(function(result: any) {
+        	console.log('日志：', result)
+      })
+      static add(a: number, b: number) {
+          return a + b;
+      }
+      @log(function(result: any) {
+        	localStorage.setItem('log', JSON.stringify(result));
+      })
+      static sub(a: number, b: number) {
+          return a - b;
+      }
+  }
+  
+  let v1 = M.add(1, 2);
+  console.log(v1);
+  let v2 = M.sub(1, 2);
+  console.log(v2);
+  ****************************************************************************************************
+  /*
+  元数据：
+      - 在 `装饰器` 函数中 ，我们可以拿到 `类`、`方法` 、`访问符`、`属性`、`参数` 的基本信息，如它们的名称，描述符 等，但是我们想获取更多信息就需要通过另外的方式来进行：`元数据`
+      - `元数据` ：用来描述数据的数据，在我们的程序中，`对象`、`类` 等都是数据，它们描述了某种数据，另外还有一种数据，它可以用来描述 `对象`、`类`，这些用来描述数据的数据就是 `元数据`
+      - 比如一首歌曲本身就是一组数据，同时还有一组用来描述歌曲的歌手、格式、时长的数据，那么这组数据就是歌曲数据的元数据*/
+  ****************************************************************************************************   
+  - 使用 `reflect-metadata` 
+  - https://www.npmjs.com/package/reflect-metadata
+  - npm install reflect-metadata
+  
+  ```
+
+  
